@@ -7,7 +7,7 @@ function App() {
   const handleStart = async () => {
   if (!url) return;
 
-  const res = await fetch("http://localhost:4000/run-test", {
+  const res = await fetch("http://localhost:4000/api/test", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url, network }),
