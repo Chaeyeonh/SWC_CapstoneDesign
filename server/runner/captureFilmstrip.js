@@ -2,13 +2,14 @@ const fs = require("fs");
 const path = require("path");
 const { applyNetworkConditions } = require("./network");
 const { createBrowser } = require("./browser");
+const { applyCPUThrottling } = require("./cpu");
 
-async function captureFilmstrip(url, network) {
-  const browser = await createBrowser();
+async function captureFilmstrip(url, { cpu, network, gpu }) {
+  const browser = await createBrowser(gpu);
   const page = await browser.newPage();
   const client = await page.target().createCDPSession();
   await applyNetworkConditions(client, network);
-
+  await applyCPUThrottling(client, cpu);
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   // 1) 실행마다 폴더 고유 생성
