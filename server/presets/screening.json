@@ -1,0 +1,8 @@
+[
+  { "cpu": "low", "network": "slow-3g", "gpu": "off" },
+  { "cpu": "medium", "network": "slow-3g", "gpu": "on" },
+  { "cpu": "high", "network": "4g", "gpu": "on" },
+  { "cpu": "low", "network": "4g", "gpu": "off" },
+  { "cpu": "medium", "network": "fast-3g", "gpu": "off" },
+  { "cpu": "medium", "network": "wifi", "gpu": "on" }
+]
