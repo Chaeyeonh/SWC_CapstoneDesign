@@ -27,9 +27,53 @@ async function captureFilmstrip(url, { cpu, network, gpu }) {
     hasTouch: true,
   });
 
+  // LCP,FCP 성능지표
+  await page.evaluateOnNewDocument(() => {
+    window.__perf = {
+      lcp: 0,
+      fcp: 0,
+      blankUntil: 0,
+    };
+
+    // LCP
+    new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntries();
+      const last = entries[entries.length - 1];
+      window.__perf.lcp = last.startTime;
+    }).observe({ type: "largest-contentful-paint", buffered: true });
+
+    // FCP
+    new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntries();
+      const fcp = entries.find(e => e.name === "first-contentful-paint");
+      if (fcp) window.__perf.fcp = fcp.startTime;
+    }).observe({ type: "paint", buffered: true });
+
+    // INP
+    // new PerformanceObserver((entryList) => {
+    //   for (const entry of entryList.getEntries()) {
+    //     if (!window.__perf.inp || entry.duration > window.__perf.inp) {
+    //       window.__perf.inp = entry.duration;
+    //     }
+    //   }
+    // }).observe({ type: "event", buffered: true });
+  });
+
   await page.goto(url, { waitUntil: "domcontentloaded" });
 
-  // 3) 촬영 설정
+  //TTFB 계산
+   const nav = JSON.parse(
+    await page.evaluate(() =>
+      JSON.stringify(performance.getEntriesByType("navigation")[0])
+    )
+  );
+
+  const ttfb = nav.responseStart - nav.requestStart;
+
+
+
+
+  // 3) Filmstrip 캡처
   const frames = [];
   const INTERVAL = 500;
   const DURATION = 5000;
@@ -48,13 +92,24 @@ async function captureFilmstrip(url, { cpu, network, gpu }) {
     await sleep(INTERVAL);
   }
 
+  //LCP,FCP 가져오기
+  const perf = await page.evaluate(() => window.__perf);
+
+  const metrics = {
+    lcp: perf.lcp,
+    fcp: perf.fcp,
+    //inp: perf.inp,
+    ttfb: ttfb,
+  };
+
   await browser.close();
 
   return {
     ok: true,
     runId,
     frames,
-    directory: `filmstrip/${runId}`
+    directory: `filmstrip/${runId}`,
+    metrics
   };
 }
 
