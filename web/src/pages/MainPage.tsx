@@ -22,50 +22,48 @@ export default function MainPage() {
 
     // 병목 급증 감지 + 어떤 preset 변화에서 급증했는지 반환
     function detectSpikes(results: any[], metricKey: string = "lcp") {
-        if (!results || results.length === 0) return [];
+      if (!results || results.length === 0) return [];
 
-        // metric 기준으로 정렬
-        const sorted = [...results].sort(
-            (a, b) => a.out.metrics[metricKey] - b.out.metrics[metricKey]
-        );
+      const sorted = [...results].sort(
+        (a, b) => a.metrics[metricKey] - b.metrics[metricKey]
+      );
 
-        const spikes: any[] = [];
+      const spikes: any[] = [];
 
-        for (let i = 1; i < sorted.length; i++) {
-            const prev = sorted[i - 1];
-            const curr = sorted[i];
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = sorted[i - 1];
+        const curr = sorted[i];
 
-            const prevVal = prev.out.metrics[metricKey];
-            const currVal = curr.out.metrics[metricKey];
+        const prevVal = prev.metrics[metricKey];
+        const currVal = curr.metrics[metricKey];
 
-            // 급증 조건
-            if (currVal > prevVal * 2) {
-            // 어떤 preset 요소가 변했는지 계산
-                const changedFactors: ChangedFactor[] = [];
-                const factors = ["cpu", "network", "gpu", "memory"] as const;
+        if (currVal > prevVal * 2) {
+          const changedFactors: ChangedFactor[] = [];
+          const factors = ["cpu", "network", "gpu", "memory"] as const;
 
-                factors.forEach(f => {
-                    if (prev.preset[f] !== curr.preset[f]) {
-                    changedFactors.push({
-                        factor: f,
-                        from: prev.preset[f],
-                        to: curr.preset[f]
-                    });
-                }
-            });
-
-            spikes.push({
-                from: prev,
-                to: curr,
-                metricKey,
-                increase: { prev: prevVal, curr: currVal },
-                changedFactors
-            });
+          factors.forEach((f) => {
+            if (prev.preset[f] !== curr.preset[f]) {
+              changedFactors.push({
+                factor: f,
+                from: prev.preset[f],
+                to: curr.preset[f],
+              });
             }
-        }
+          });
 
-        return spikes;
+          spikes.push({
+            from: prev,
+            to: curr,
+            metricKey,
+            increase: { prev: prevVal, curr: currVal },
+            changedFactors,
+          });
+        }
+      }
+
+      return spikes;
     }
+
 
 
   // UI에서 매번 계산되지 않도록 useMemo 적용
@@ -90,7 +88,7 @@ export default function MainPage() {
     return false;
   }
 
-  // 👉 어떤 지표가 초과되었는지 리스트 반환
+  // 어떤 지표가 초과되었는지 리스트 반환
   function getBrokenMetrics(m: any) {
     if (!m) return [];
 
@@ -244,7 +242,7 @@ export default function MainPage() {
             >
 
                 {screeningResults.map((r, i) => {
-                    const m = r.out?.metrics;
+                    const m = r.metrics;
                     const bottleneck = isBottleneck(m);
                     const broken = getBrokenMetrics(m);
 
@@ -281,8 +279,7 @@ export default function MainPage() {
                             )}
 
                             <hr />
-                            <p>Filmstrip 폴더: {r.out.directory}</p>
-
+                      
                             {isSpikeResult(r) && (
                                 <div style={{ marginTop: 10, padding: 8, background: "#fff3cd", borderRadius: 6 }}>
                                     <strong>급증 요인:</strong>
