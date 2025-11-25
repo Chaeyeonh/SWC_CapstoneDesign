@@ -10,6 +10,7 @@ exports.runScreening = async (req, res) => {
       cpu: preset.cpu,
       network: preset.network,
       gpu: preset.gpu,
+      memory: preset.memory,
       headless: true    
     });
 

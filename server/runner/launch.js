@@ -1,18 +1,21 @@
 const { applyNetworkConditions } = require("./network");
 const { createBrowser } = require("./browser");
 const { applyCPUThrottling } = require("./cpu");
+const { applyMemoryConditions } = require("./memory");
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function launch(url, { cpu, network, gpu, headless = false }) {
-  const browser = await createBrowser(gpu, headless);
+async function launch(url, { cpu, network, gpu, memory, headless = false }) {
+  const browser = await createBrowser(gpu, headless,memory);
   const page = await browser.newPage();
   const client = await page.target().createCDPSession();
 
   await applyNetworkConditions(client, network);
   await applyCPUThrottling(client, cpu);
+  await applyMemoryConditions(client, memory);
+
 
   console.log(">>> launch.js LOADED");
 

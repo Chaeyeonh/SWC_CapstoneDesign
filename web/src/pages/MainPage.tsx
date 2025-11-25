@@ -211,9 +211,9 @@ export default function MainPage() {
             onChange={(e) => setMemory(e.target.value)}
             style={{ marginLeft: 8 }}
           >
-            <option value="low">Low Memory</option>
+            <option value="very-low">Very Low (128MB 제한)</option>
+            <option value="low">low (256MB 제한)</option>
             <option value="normal">Normal</option>
-            <option value="high">High</option>
           </select>
         </label>
       </div>
@@ -262,6 +262,7 @@ export default function MainPage() {
                             <p><strong>CPU:</strong> {r.preset.cpu}</p>
                             <p><strong>Network:</strong> {r.preset.network}</p>
                             <p><strong>GPU:</strong> {r.preset.gpu}</p>
+                            <p><strong>Memory:</strong> {r.preset.memory}</p>
 
                             <hr />
 
