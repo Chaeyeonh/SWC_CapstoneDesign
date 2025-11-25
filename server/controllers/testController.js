@@ -2,7 +2,7 @@ const { launch } = require("../runner/launch");
 
 async function runTest(req, res) {
   try {
-    const { url, network, cpu, gpu } = req.body || {};
+    const { url, network, cpu, gpu, memory } = req.body || {};
 
     if (!url) {
       return res.status(400).json({ error: "url is required" });
@@ -12,6 +12,7 @@ async function runTest(req, res) {
       network,
       cpu,
       gpu,
+      memory,
       headless: false       //  실제 창 띄우기
     });
 
