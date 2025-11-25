@@ -1,7 +1,7 @@
 // server/runner/browser.js
 const puppeteer = require("puppeteer");
 
-async function createBrowser(gpu = "on") {
+async function createBrowser(gpu = "on", headless = false) {
   const args = [
     "--no-sandbox",
     "--disable-setuid-sandbox",
@@ -16,8 +16,8 @@ async function createBrowser(gpu = "on") {
   }
 
   return puppeteer.launch({
-    headless: false,        // 실제 크롬창 띄우기
-    defaultViewport: null,  // 창 크기를 OS 기본값으로 (window 사이즈 그대로)
+    headless: headless,       // 전달된 headless 설정 적용
+    defaultViewport: null,
     args,
   });
 }

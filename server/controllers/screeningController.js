@@ -6,7 +6,13 @@ exports.runScreening = async (req, res) => {
   const results = [];
 
   for (const preset of presets) {
-    const metrics = await launch(url,preset);
+    const metrics = await launch(url, {
+      cpu: preset.cpu,
+      network: preset.network,
+      gpu: preset.gpu,
+      headless: true    
+    });
+
     results.push({ preset, metrics });
   }
 
