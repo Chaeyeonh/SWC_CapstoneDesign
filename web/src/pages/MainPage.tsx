@@ -267,10 +267,10 @@ export default function MainPage() {
 
                             {m ? (
                                 <>
-                                <p><strong>LCP:</strong> {Math.round(m.lcp)} ms</p>
-                                <p><strong>FCP:</strong> {Math.round(m.fcp)} ms</p>
-                                <p><strong>INP:</strong> {Math.round(m.inp)} ms</p>
-                                <p><strong>TTFB:</strong> {Math.round(m.ttfb)} ms</p>
+                                <p><strong>LCP:</strong> {Math.round(Number(m.lcp))} ms</p>
+                                <p><strong>FCP:</strong> {Math.round(Number(m.fcp))} ms</p>
+                                {/*<p><strong>INP:</strong> {Math.round(Number(m.inp))} ms</p>*/}
+                                <p><strong>TTFB:</strong> {Math.round(Number(m.ttfb))} ms</p>
                         
                                
                                 </>

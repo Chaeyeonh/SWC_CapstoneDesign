@@ -8,6 +8,8 @@ const router = express.Router();
 router.get("/", (req, res) => {
   res.send("OK");
 });
+console.log(">>> runTest reached");
+
 
 // test run
 router.post("/", runTest);

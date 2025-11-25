@@ -8,8 +8,12 @@ async function runTest(req, res) {
       return res.status(400).json({ error: "url is required" });
     }
 
-    // 실제 headful 크롬창을 띄우고 LCP/FCP/TTFB 등 성능지표 측정
-    const metrics = await launch(url, { network, cpu, gpu });
+    const metrics = await launch(url, {
+      network,
+      cpu,
+      gpu,
+      headless: false       //  실제 창 띄우기
+    });
 
     return res.json({
       ok: true,
@@ -24,5 +28,6 @@ async function runTest(req, res) {
     });
   }
 }
+
 
 module.exports = { runTest };
