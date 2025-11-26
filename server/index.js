@@ -2,13 +2,13 @@
 
 const express = require("express");
 const cors = require("cors");
-const testRoute = require("./routes/testRoute");
+const runRoutes = require("./routes/runRoutes");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/test", testRoute);
+app.use("/api", runRoutes);
 
 
 app.listen(4000, () => {

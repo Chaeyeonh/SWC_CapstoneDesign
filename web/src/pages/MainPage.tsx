@@ -102,35 +102,22 @@ export default function MainPage() {
     return broken;
   }
 
-  // 단일 테스트 실행
-  const handleStartSingle = async () => {
-    if (!url) return;
 
-    const res = await fetch("http://localhost:4000/api/test", {
+  // 자동 스크리닝 실행
+  const handleRun = async () => {
+    if (!url) return;
+    setLoading(true);
+
+    const res = await fetch("http://localhost:4000/api/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         url,
-        network,
-        cpu,
-        gpu,
-        memory
+        cpu: [cpu],            
+        network: [network],
+        gpu: [gpu],
+        memory: [memory]
       }),
-    });
-
-    const data = await res.json();
-    console.log("single test result:", data);
-  };
-
-  // 자동 스크리닝 실행
-  const handleRunScreening = async () => {
-    if (!url) return;
-    setLoading(true);
-
-    const res = await fetch("http://localhost:4000/api/test/screening", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
     });
 
     const data = await res.json();
@@ -218,13 +205,8 @@ export default function MainPage() {
         </label>
       </div>
 
-      {/* 단일 테스트 */}
-      <button onClick={handleStartSingle} style={{ marginRight: 10 }}>
-        단일 테스트 실행
-      </button>
-
       {/* 스크리닝 테스트 */}
-      <button onClick={handleRunScreening}>자동 분석 시작하기</button>
+      <button onClick={handleRun}>실행하기</button>
 
       {loading && <p>스크리닝 실행 중...</p>}
 
