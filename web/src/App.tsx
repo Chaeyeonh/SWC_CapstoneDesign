@@ -1,15 +1,18 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import MainPage from "./pages/MainPage";
-//import ResultPage from "./pages/ResultPage";
+import DashboardPage from "./pages/DashboardPage";
+import PopupPage from "./pages/PopupPage";
+import { RunProvider } from "./hooks/useRun";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MainPage />} />
-    
-      </Routes>
-    </BrowserRouter>
+    <RunProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<PopupPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+        </Routes>
+      </BrowserRouter>
+    </RunProvider>
   );
 }
 
