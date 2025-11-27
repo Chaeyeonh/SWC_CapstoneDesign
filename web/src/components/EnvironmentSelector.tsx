@@ -29,7 +29,7 @@ export function EnvironmentSelector({
 }: EnvironmentSelectorProps) {
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <input
         style={{ width: 320 }}
         placeholder="https://example.com"
