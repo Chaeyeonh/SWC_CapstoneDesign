@@ -37,7 +37,7 @@ export default function PopupPage() {
 
   return (
     <div style={{ padding: 16, width: 360 }}>
-      <h2 style={{ marginTop: 0 }}>스크리닝 Preset 선택</h2>
+      <h2 style={{ marginTop: 0 }}>UX Simulator</h2>
       <EnvironmentSelector
         url={url}
         setUrl={setUrl}
@@ -67,7 +67,7 @@ export default function PopupPage() {
             cursor: canRun && !loading ? "pointer" : "not-allowed",
           }}
         >
-          {loading ? "Headless 실행 중..." : `Headless 실행 (${totalPresets}개 조합)`}
+          {loading ? "실행 중..." : `실행`}
         </button>
         {!canRun && (
           <p style={{ marginTop: 8, color: "#b91c1c", fontSize: 12 }}>
