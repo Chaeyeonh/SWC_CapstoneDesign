@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Button } from "../components/common/Button";
 import type { Metrics, Preset, ScreeningResult } from "../hooks/useRun";
 
 export interface ChangedFactor {
@@ -27,144 +29,103 @@ export function PresetResultCard({
   spikeFactors,
   onHeadful,
   timeout,
-  error
+  error,
 }: PresetResultCardProps) {
-  // 디버깅용 로그
-  if (timeout !== undefined || error) {
-    console.log(`[PresetResultCard #${index + 1}] timeout:`, timeout, "error:", error);
-  }
+  const [showAI, setShowAI] = useState(false);
+
+  const isTimeout = timeout === true || result.timeout === true;
   
+
   return (
     <div
-      style={{
-        padding: 20,
-        borderRadius: 12,
-   
-        background: bottleneck || result.timeout === true ? "#fee2e2" : "#ecfccb",
-        border: bottleneck || result.timeout === true ? "1px solid #f87171" : "1px solid #84cc16",
-        boxShadow: "0 10px 20px -10px rgba(15, 23, 42, 0.25)",
-      }}
+      className={`
+        p-5 rounded-xl shadow-lg border
+        ${bottleneck || isTimeout 
+          ? "bg-red-100 border-red-400" 
+          : "bg-lime-100 border-lime-500"
+        }
+      `}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h4 style={{ margin: 0 }}>Preset #{index + 1}</h4>
-        <button
-          onClick={onHeadful}
-          style={{
-            padding: "4px 10px",
-            borderRadius: 6,
-            border: "1px solid #0f172a",
-            background: "#fff",
-            cursor: "pointer",
-          }}
-        >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h4 className="m-0 font-semibold">Preset #{index + 1}</h4>
+
+        <Button variant="outline" onClick={onHeadful}>
           실행하기
-        </button>
+        </Button>
       </div>
 
-      <p style={{ margin: "8px 0 0" }}>
-        <strong>CPU:</strong> {result.preset.cpu}
-      </p>
-      <p style={{ margin: "4px 0" }}>
-        <strong>Network:</strong> {result.preset.network}
-      </p>
-      <p style={{ margin: "4px 0" }}>
-        <strong>GPU:</strong> {result.preset.gpu}
-      </p>
-      <p style={{ margin: "4px 0 12px" }}>
-        <strong>Memory:</strong> {result.preset.memory}
-      </p>
+      {/* Preset Info */}
+      <div className="mt-3 space-y-1 text-sm">
+        <p><strong>CPU:</strong> {result.preset.cpu}</p>
+        <p><strong>Network:</strong> {result.preset.network}</p>
+        <p><strong>GPU:</strong> {result.preset.gpu}</p>
+        <p><strong>Memory:</strong> {result.preset.memory}</p>
+      </div>
 
       {/* Timeout UI */}
-      {(timeout === true || result.timeout === true) && (
-        <div style={{
-          padding: "16px",
-          background: "#fff7ed",
-          border: "2px solid #fb923c",
-          borderRadius: 8,
-          marginTop: 12,
-          marginBottom: 12
-        }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 8
-          }}>
-            <span style={{ fontSize: 20 }}>⏱️</span>
-            <strong style={{ color: "#ea580c", fontSize: 16 }}>
-              페이지 로드 타임아웃
-            </strong>
+      {isTimeout && (
+        <div className="mt-4 mb-4 p-4 bg-orange-50 border-2 border-orange-400 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl">⏱️</span>
+            <strong className="text-orange-700 text-base">페이지 로드 타임아웃</strong>
           </div>
-          <p style={{ 
-            margin: 0, 
-            fontSize: 14, 
-            color: "#9a3412",
-            lineHeight: 1.5
-          }}>
-            이 preset 환경에서는 제한 시간(150초) 내에 페이지가 완전히 로드되지 않았습니다.
+
+          <p className="text-orange-700 text-sm leading-5">
+            이 preset 환경에서는 제한 시간 내에 페이지가 완전히 로드되지 않았습니다.
             {error && (
-              <span style={{ display: "block", marginTop: 4, fontSize: 12, opacity: 0.8 }}>
-                ({(error || result.error)})
+              <span className="block mt-1 text-xs opacity-70">
+                ({error})
               </span>
             )}
           </p>
         </div>
       )}
 
-      {/* 일반 에러 UI (timeout이 아닌 경우) */}
-      {error && !timeout && (
-        <div style={{
-          padding: "12px 16px",
-          background: "#fef2f2",
-          color: "#b91c1c",
-          borderRadius: 8,
-          marginTop: 12,
-          marginBottom: 12
-        }}>
-          <strong>⚠ 오류 발생</strong>
-          <p style={{ marginTop: 4, marginBottom: 0, fontSize: 12 }}>{error}</p>
+      {/* 일반 에러 UI */}
+      {error && !isTimeout && (
+        <div className="mt-4 mb-4 p-3 bg-red-50 border border-red-300 rounded-lg">
+          <strong className="text-red-700 text-sm">⚠ 오류 발생</strong>
+          <p className="text-red-700 text-xs mt-1">{error}</p>
         </div>
       )}
 
-      {/* 정상적인 메트릭 표시 */}
-      {metrics && !timeout && (
-        <>
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
-            <p style={{ margin: "4px 0" }}>
-              <strong>LCP:</strong> {!isNaN(Number(metrics.lcp)) ? Math.round(Number(metrics.lcp)) : 0} ms
-            </p>
-            <p style={{ margin: "4px 0" }}>
-              <strong>FCP:</strong> {!isNaN(Number(metrics.fcp)) ? Math.round(Number(metrics.fcp)) : 0} ms
-            </p>
-            <p style={{ margin: "4px 0" }}>
-              <strong>TTFB:</strong> {!isNaN(Number(metrics.ttfb)) ? Math.round(Number(metrics.ttfb)) : 0} ms
-            </p>
-            <p style={{ margin: "4px 0 0" }}>
-              <strong>CLS:</strong> {!isNaN(Number(metrics.cls)) ? Number(metrics.cls).toFixed(3) : "0.000"}
-            </p>
-          </div>
-        </>
+      {/* Metrics */}
+      {metrics && !isTimeout && (
+        <div className="mt-4 border-t border-slate-300 pt-3 text-sm space-y-1">
+          <p><strong>LCP:</strong> {Math.round(Number(metrics.lcp))} ms</p>
+          <p><strong>FCP:</strong> {Math.round(Number(metrics.fcp))} ms</p>
+          <p><strong>TTFB:</strong> {Math.round(Number(metrics.ttfb))} ms</p>
+          <p><strong>CLS:</strong> {Number(metrics.cls).toFixed(3)}</p>
+        </div>
       )}
 
-      {spikeFactors && spikeFactors.length > 0 && (
-        <div
-          style={{
-            marginTop: 12,
-            padding: 10,
-            background: "#fff7ed",
-            borderRadius: 8,
-          }}
+      {/* AI 분석 버튼 */}
+      {result.ai && !isTimeout && (
+        <Button
+          variant="neutral"
+          onClick={() => setShowAI(!showAI)}
+          className="mt-4"
         >
-          <strong>급증 요인</strong>
-          <ul style={{ margin: "6px 0 0 18px" }}>
-            {spikeFactors.map((cf, spikeIdx) => (
-              <li key={spikeIdx}>
+          {showAI ? "AI 분석 접기" : "AI 분석 보기"}
+        </Button>
+      )}
+
+      {/* AI 분석 결과 */}
+      {showAI && result.ai && !isTimeout && (
+        <div className="mt-4 p-4 bg-slate-50 border rounded-lg whitespace-pre-wrap leading-6 text-sm">
+          <h4 className="mt-0 font-semibold">AI 분석 결과</h4>
+          {result.ai}
+        </div>
+      )}
+
+      {/* Spike Factor */}
+      {spikeFactors && spikeFactors.length > 0 && (
+        <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+          <strong className="text-sm">급증 요인</strong>
+          <ul className="list-disc pl-5 mt-1 space-y-1 text-sm">
+            {spikeFactors.map((cf, idx) => (
+              <li key={idx}>
                 {cf.factor}: {cf.from} → {cf.to}
               </li>
             ))}
@@ -172,22 +133,13 @@ export function PresetResultCard({
         </div>
       )}
 
+      {/* Broken Metrics */}
       {brokenMetrics.length > 0 && (
-        <div
-          style={{
-            marginTop: 12,
-            padding: 10,
-            background: "#fef2f2",
-            borderRadius: 8,
-            border: "1px solid #fecaca",
-          }}
-        >
-          <strong>병목 기준 초과</strong>
-          <ul style={{ margin: "6px 0 0 18px" }}>
-            {brokenMetrics.map((b, brokenIdx) => (
-              <li key={brokenIdx} style={{ color: "#b91c1c" }}>
-                {b}
-              </li>
+        <div className="mt-4 p-3 bg-red-50 border border-red-300 rounded-lg">
+          <strong className="text-sm">병목 기준 초과</strong>
+          <ul className="list-disc pl-5 mt-1 space-y-1 text-sm text-red-700">
+            {brokenMetrics.map((b, idx) => (
+              <li key={idx}>{b}</li>
             ))}
           </ul>
         </div>
@@ -195,4 +147,3 @@ export function PresetResultCard({
     </div>
   );
 }
-

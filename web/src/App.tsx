@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import DashboardPage from "./pages/DashboardPage";
 import PopupPage from "./pages/PopupPage";
 import { RunProvider } from "./hooks/useRun";
+import "./index.css";
+
 
 function App() {
   return (

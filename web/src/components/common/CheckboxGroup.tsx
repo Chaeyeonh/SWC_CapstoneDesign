@@ -7,24 +7,23 @@ interface CheckboxGroupProps {
   onToggle: (value: string) => void;
 }
 
-
-export function CheckboxGroup({ label, options, selected, onToggle }:CheckboxGroupProps) {
+export function CheckboxGroup({ label, options, selected, onToggle }: CheckboxGroupProps) {
   return (
-    <div style={{ marginBottom: 12 }}>
-      <strong>{label}</strong><br/>
+    <div className="flex flex-col gap-2 mb-4">
+      {/* 라벨 */}
+      <p className="text-sm font-semibold text-gray-700 mb-1">{label}</p>
 
-      {options.map(opt => (
-        <Checkbox
-          key={opt.value}
-          label={opt.label}
-          checked={selected.includes(opt.value)}
-          onChange={() => {
-          
-            onToggle(opt.value);
-          }}
-          
-        />
-      ))}
+      {/* 체크박스 목록 */}
+      <div className="flex flex-col gap-1">
+        {options.map((opt) => (
+          <Checkbox
+            key={opt.value}
+            label={opt.label}
+            checked={selected.includes(opt.value)}
+            onChange={() => onToggle(opt.value)}
+          />
+        ))}
+      </div>
     </div>
   );
 }

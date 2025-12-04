@@ -29,14 +29,21 @@ export function EnvironmentSelector({
 }: EnvironmentSelectorProps) {
 
   return (
-    <div className="flex flex-col gap-4">
-      <input
-        style={{ width: 320 }}
-        placeholder="https://example.com"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-      />
+    <div className="flex flex-col gap-6">
 
+      {/* URL 입력 */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">테스트 URL</label>
+        <input
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="https://example.com"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+        />
+      </div>
+
+      {/* CPU 체크박스 */}
       <CheckboxGroup
         label="CPU"
         options={[
@@ -48,6 +55,7 @@ export function EnvironmentSelector({
         onToggle={(v) => toggle(cpus, v, setCpus)}
       />
 
+      {/* Network 체크박스 */}
       <CheckboxGroup
         label="Network"
         options={[
@@ -60,6 +68,7 @@ export function EnvironmentSelector({
         onToggle={(v) => toggle(networks, v, setNetworks)}
       />
 
+      {/* GPU 체크박스 */}
       <CheckboxGroup
         label="GPU"
         options={[
@@ -70,6 +79,7 @@ export function EnvironmentSelector({
         onToggle={(v) => toggle(gpus, v, setGpus)}
       />
 
+      {/* Memory 체크박스 */}
       <CheckboxGroup
         label="Memory"
         options={[
@@ -80,6 +90,7 @@ export function EnvironmentSelector({
         selected={memories}
         onToggle={(v) => toggle(memories, v, setMemories)}
       />
+
     </div>
   );
 }
