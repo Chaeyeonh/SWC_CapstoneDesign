@@ -25,6 +25,7 @@ export interface ScreeningResult {
   metrics: Metrics | null;
   timeout?: boolean;   // 서버에서 넘겨오는 timeout 여부
   error?: string | null;  // 오류 메시지
+  ai?: string | null;
 }
 
 export interface RunPayload {
