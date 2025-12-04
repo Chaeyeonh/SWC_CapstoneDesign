@@ -16,13 +16,15 @@ export interface Preset {
 export interface Metrics {
   lcp: number;
   fcp: number;
-  inp: number;
+  cls: number;
   ttfb: number;
 }
 
 export interface ScreeningResult {
   preset: Preset;
   metrics: Metrics | null;
+  timeout?: boolean;   // 서버에서 넘겨오는 timeout 여부
+  error?: string | null;  // 오류 메시지
 }
 
 export interface RunPayload {

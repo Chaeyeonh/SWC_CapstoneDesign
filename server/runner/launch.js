@@ -3,74 +3,175 @@ const { createBrowser } = require("./browser");
 const { applyCPUThrottling } = require("./cpu");
 const { applyMemoryConditions } = require("./memory");
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+async function launch(url, { cpu, network, gpu, memory, headless = true, timeout = 150000, observationWindow = 100 }) {
+  let browser;
+  
+  try {
+    browser = await createBrowser(gpu, headless, memory);
+    const page = await browser.newPage();
+    const client = await page.target().createCDPSession();
 
-async function launch(url, { cpu, network, gpu, memory, headless = false }) {
-  const browser = await createBrowser(gpu, headless,memory);
-  const page = await browser.newPage();
-  const client = await page.target().createCDPSession();
+    await applyNetworkConditions(client, network);
+    await applyCPUThrottling(client, cpu);
+    await applyMemoryConditions(client, memory);
 
-  await applyNetworkConditions(client, network);
-  await applyCPUThrottling(client, cpu);
-  await applyMemoryConditions(client, memory);
+    console.log(">>> launch.js LOADED (Lighthouse-style LCP)");
 
+    // ---------------------------------------------------------
+    // 1) Enhanced LCP/FCP/CLS Observer with session windowing
+    // ---------------------------------------------------------
+    await page.evaluateOnNewDocument(() => {
+      window.__metrics = {
+        lcpEntry: null,
+        fcpEntry: null,
+        clsValue: 0,
+        clsSessions: [],
+        currentSession: { value: 0, startTime: 0 },
+        done: false,
+      };
 
-  console.log(">>> launch.js LOADED");
-
-
-
-  // 옵저버 주입 
-
-  await page.evaluateOnNewDocument(() => {
-    window.__perf = { lcp: 0, fcp: 0, inp: 0 };
-
-    new PerformanceObserver((entryList) => {
-      const entries = entryList.getEntries();
-      const last = entries[entries.length - 1];
-      window.__perf.lcp = last.startTime;
-    }).observe({ type: 'largest-contentful-paint', buffered: true });
-
-    new PerformanceObserver((entryList) => {
-      const entries = entryList.getEntries();
-      const fcp = entries.find(e => e.name === "first-contentful-paint");
-      if (fcp) window.__perf.fcp = fcp.startTime;
-    }).observe({ type: "paint", buffered: true });
-
-    new PerformanceObserver((entryList) => {
-      for (const e of entryList.getEntries()) {
-        if (!window.__perf.inp || e.duration > window.__perf.inp) {
-          window.__perf.inp = e.duration;
+      // LCP Observer
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          window.__metrics.lcpEntry = entry;
         }
+      }).observe({ type: "largest-contentful-paint", buffered: true });
+
+      // FCP Observer
+      new PerformanceObserver((list) => {
+        const entry = list.getEntries().find(e => e.name === "first-contentful-paint");
+        if (entry) window.__metrics.fcpEntry = entry;
+      }).observe({ type: "paint", buffered: true });
+
+      // CLS Observer with session windowing (Lighthouse-style)
+      new PerformanceObserver((list) => {
+        const MAX_SESSION_GAP = 1000; // 1 second gap
+        const MAX_WINDOW_DURATION = 5000; // 5 second window
+        
+        for (const entry of list.getEntries()) {
+          if (!entry.hadRecentInput) {
+            const m = window.__metrics;
+            const timeSinceLastShift = entry.startTime - m.currentSession.startTime;
+            
+            // Start new session if gap > 1s or window > 5s
+            if (timeSinceLastShift > MAX_SESSION_GAP || 
+                timeSinceLastShift > MAX_WINDOW_DURATION) {
+              if (m.currentSession.value > 0) {
+                m.clsSessions.push(m.currentSession.value);
+              }
+              m.currentSession = { value: entry.value, startTime: entry.startTime };
+            } else {
+              m.currentSession.value += entry.value;
+              m.currentSession.startTime = entry.startTime;
+            }
+            
+            // Update max CLS across all sessions
+            m.clsValue = Math.max(m.clsValue, m.currentSession.value);
+          }
+        }
+      }).observe({ type: "layout-shift", buffered: true });
+
+      // Finalize function
+      const finalize = () => { 
+        window.__metrics.done = true;
+        // Finalize last CLS session
+        if (window.__metrics.currentSession.value > 0) {
+          window.__metrics.clsSessions.push(window.__metrics.currentSession.value);
+          window.__metrics.clsValue = Math.max(...window.__metrics.clsSessions, 0);
+        }
+      };
+      
+      addEventListener("visibilitychange", finalize, { once: true });
+      addEventListener("pagehide", finalize, { once: true });
+    });
+
+    // ---------------------------------------------------------
+    // 2) Page Load with better error handling
+    // ---------------------------------------------------------
+    try {
+      await page.goto(url, {
+        waitUntil: "load",
+        timeout,
+      });
+    } catch (e) {
+      console.error(`Navigation error: ${e.message}`);
+      return {
+        metrics: null,
+        timeout: true,
+        error: e.message || "Navigation timeout",
+      };
+    }
+
+    // ---------------------------------------------------------
+    // 3) Observation window with metrics check
+    // ---------------------------------------------------------
+    console.log(`Waiting ${observationWindow}ms for metrics to stabilize...`);
+    await new Promise(resolve => setTimeout(resolve, observationWindow));
+
+    // Manually trigger finalization
+    try {
+      await page.evaluate(() => {
+        if (!window.__metrics.done) {
+          document.dispatchEvent(new Event("visibilitychange"));
+        }
+      });
+    } catch (e) {
+      console.warn("Could not trigger finalization:", e.message);
+    }
+
+    // ---------------------------------------------------------
+    // 4) Extract Metrics with validation
+    // ---------------------------------------------------------
+    const metrics = await page.evaluate(() => {
+      const m = window.__metrics;
+      return {
+        lcp: m.lcpEntry ? m.lcpEntry.startTime : null,
+        fcp: m.fcpEntry ? m.fcpEntry.startTime : null,
+        cls: m.clsValue || 0,
+        done: m.done,
+      };
+    }).catch(e => {
+      console.error("Error extracting metrics:", e.message);
+      return { lcp: null, fcp: null, cls: 0, done: false };
+    });
+
+    // TTFB with fallback
+    const nav = await page.evaluate(() => {
+      const navEntry = performance.getEntriesByType("navigation")[0];
+      return navEntry ? {
+        responseStart: navEntry.responseStart,
+        requestStart: navEntry.requestStart,
+        fetchStart: navEntry.fetchStart,
+      } : null;
+    }).catch(() => null);
+
+    const ttfb = nav ? nav.responseStart - nav.requestStart : null;
+
+    return {
+      lcp: metrics.lcp !== null ? Number(metrics.lcp) : null,
+      fcp: metrics.fcp !== null ? Number(metrics.fcp) : null,
+      cls: Number(metrics.cls) || 0,
+      ttfb: ttfb !== null ? Number(ttfb) : null,
+      metricsFinalized: metrics.done,
+    };
+
+  } catch (error) {
+    console.error("Launch error:", error);
+    return {
+      metrics: null,
+      timeout: false,
+      error: error.message,
+    };
+  } finally {
+    // Ensure browser closes
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (e) {
+        console.error("Error closing browser:", e.message);
       }
-    }).observe({ type: "event", buffered: true });
-  });
-
-
-  await page.goto(url, { waitUntil: "domcontentloaded" });
-  await sleep(1500);
-  const perf = await page.evaluate(() => window.__perf);
-
-
-  // TTFB
-  const nav = JSON.parse(
-    await page.evaluate(() =>
-      JSON.stringify(performance.getEntriesByType("navigation")[0])
-    )
-  );
-  const ttfb = nav.responseStart - nav.requestStart;
-
-  console.log("FINAL METRICS:", perf);
-
-  return {
-
-      lcp: perf.lcp,
-      fcp: perf.fcp,
-      inp: perf.inp,
-      ttfb
-
-  };
+    }
+  }
 }
 
 module.exports = { launch };
