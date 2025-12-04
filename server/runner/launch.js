@@ -3,7 +3,7 @@ const { createBrowser } = require("./browser");
 const { applyCPUThrottling } = require("./cpu");
 const { applyMemoryConditions } = require("./memory");
 
-async function launch(url, { cpu, network, gpu, memory, headless = true, timeout = 150000, observationWindow = 100 }) {
+async function launch(url, { cpu, network, gpu, memory, headless = true, timeout = 180000, observationWindow = 5000 }) {
   let browser;
   
   try {
@@ -15,7 +15,7 @@ async function launch(url, { cpu, network, gpu, memory, headless = true, timeout
     await applyCPUThrottling(client, cpu);
     await applyMemoryConditions(client, memory);
 
-    console.log(">>> launch.js LOADED (Lighthouse-style LCP)");
+    console.log(">>> launch.js LOADED ");
 
     // ---------------------------------------------------------
     // 1) Enhanced LCP/FCP/CLS Observer with session windowing
@@ -45,8 +45,8 @@ async function launch(url, { cpu, network, gpu, memory, headless = true, timeout
 
       // CLS Observer with session windowing (Lighthouse-style)
       new PerformanceObserver((list) => {
-        const MAX_SESSION_GAP = 1000; // 1 second gap
-        const MAX_WINDOW_DURATION = 5000; // 5 second window
+        const MAX_SESSION_GAP = 1000; // 1초동안 레이아웃 변경 없으면 세선 종료, 새 세션 시작작
+        const MAX_WINDOW_DURATION = 5000; // 세션 최대 지속 시간간
         
         for (const entry of list.getEntries()) {
           if (!entry.hadRecentInput) {
@@ -111,10 +111,16 @@ async function launch(url, { cpu, network, gpu, memory, headless = true, timeout
     // Manually trigger finalization
     try {
       await page.evaluate(() => {
-        if (!window.__metrics.done) {
-          document.dispatchEvent(new Event("visibilitychange"));
+        const m = window.__metrics;
+        if (!m.done) {
+          if (m.currentSession.value > 0) {
+            m.clsSessions.push(m.currentSession.value);
+            m.clsValue = Math.max(...m.clsSessions, m.clsValue);
+          }
+          m.done = true;
         }
       });
+      
     } catch (e) {
       console.warn("Could not trigger finalization:", e.message);
     }
@@ -148,12 +154,16 @@ async function launch(url, { cpu, network, gpu, memory, headless = true, timeout
     const ttfb = nav ? nav.responseStart - nav.requestStart : null;
 
     return {
-      lcp: metrics.lcp !== null ? Number(metrics.lcp) : null,
-      fcp: metrics.fcp !== null ? Number(metrics.fcp) : null,
-      cls: Number(metrics.cls) || 0,
-      ttfb: ttfb !== null ? Number(ttfb) : null,
-      metricsFinalized: metrics.done,
+      metrics: {
+        lcp: metrics.lcp !== null ? Number(metrics.lcp) : null,
+        fcp: metrics.fcp !== null ? Number(metrics.fcp) : null,
+        cls: Number(metrics.cls) || 0,
+        ttfb: ttfb !== null ? Number(ttfb) : null,
+      },
+      timeout: false,
+      error: null
     };
+    
 
   } catch (error) {
     console.error("Launch error:", error);
@@ -162,15 +172,7 @@ async function launch(url, { cpu, network, gpu, memory, headless = true, timeout
       timeout: false,
       error: error.message,
     };
-  } finally {
-    // Ensure browser closes
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (e) {
-        console.error("Error closing browser:", e.message);
-      }
-    }
+  
   }
 }
 

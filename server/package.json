@@ -8,7 +8,9 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^4.19.2",
+    "openai": "^6.9.1",
     "puppeteer": "^24.29.1"
   },
   "devDependencies": {

@@ -34,7 +34,20 @@ export function PresetResultCard({
   const [showAI, setShowAI] = useState(false);
 
   const isTimeout = timeout === true || result.timeout === true;
-  
+
+  console.log("=== PRESET CARD DEBUG ===", {
+    index,
+    metrics,
+    timeoutProp: timeout,
+    resultTimeout: result.timeout,
+    isTimeout,
+    hasMetrics:
+      metrics &&
+      typeof metrics.lcp === "number" &&
+      !isNaN(metrics.lcp),
+  });
+  console.log("Result:", result);
+
 
   return (
     <div

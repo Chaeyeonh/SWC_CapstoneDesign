@@ -1,10 +1,12 @@
 //서버 부팅, 라우트 연결
+require('dotenv').config({ path: __dirname + '/.env' });
 
 const express = require("express");
 const cors = require("cors");
 const runRoutes = require("./routes/runRoutes");
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
