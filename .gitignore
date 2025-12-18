@@ -29,3 +29,5 @@ storage/
 #env
 .env
 .env.*
+server/.env
+server/.env.*

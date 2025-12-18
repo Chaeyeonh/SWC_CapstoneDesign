@@ -23,8 +23,8 @@ export interface Metrics {
 export interface ScreeningResult {
   preset: Preset;
   metrics: Metrics | null;
-  timeout?: boolean;   // 서버에서 넘겨오는 timeout 여부
-  error?: string | null;  // 오류 메시지
+  timeout?: boolean;
+  error?: string | null;
   ai?: string | null;
 }
 
@@ -39,16 +39,26 @@ export interface RunPayload {
 interface RunContextValue {
   url: string;
   setUrl: (val: string) => void;
+
   cpus: string[];
   setCpus: (val: string[]) => void;
+
   networks: string[];
   setNetworks: (val: string[]) => void;
+
   gpus: string[];
   setGpus: (val: string[]) => void;
+
   memories: string[];
   setMemories: (val: string[]) => void;
+
   results: ScreeningResult[];
+
   loading: boolean;
+
+  currentIndex: number;
+  totalCount: number;
+
   runPresets: (payload?: RunPayload) => Promise<void>;
   runHeadful: (preset: Preset, targetUrl?: string) => Promise<void>;
   clearResults: () => void;
@@ -65,6 +75,30 @@ export function RunProvider({ children }: { children: ReactNode }) {
   const [results, setResults] = useState<ScreeningResult[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // 진행률 상태
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+
+  /**
+   * preset 하나를 서버에 보내서 실행시키는 함수
+   */
+  // const runSinglePreset = async (preset: Preset, url: string) => {
+  //   const res = await fetch("http://localhost:4000/api/run", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify({ url, preset }),
+  //   });
+
+  //   const data = await res.json();
+  //   if (!data.preset) {
+  //   data.preset = { cpu: 'default', network: 'default', gpu: 'default', memory: 'default' };
+  // }
+  //   return data as ScreeningResult;
+  // };
+
+  /**
+   * 프리셋 전체 실행
+   */
   const runPresets = useCallback(
     async (override?: RunPayload) => {
       const payload = {
@@ -75,6 +109,10 @@ export function RunProvider({ children }: { children: ReactNode }) {
         memory: override?.memory ?? memories,
       };
 
+      console.log("--- Starting runPresets ---");
+      console.log("Selected CPUs:", payload.cpu); 
+      console.log("Total combinations:", payload.cpu.length * payload.network.length * payload.gpu.length * payload.memory.length);
+
       if (
         !payload.url ||
         payload.cpu.length === 0 ||
@@ -82,9 +120,10 @@ export function RunProvider({ children }: { children: ReactNode }) {
         payload.gpu.length === 0 ||
         payload.memory.length === 0
       ) {
-        console.warn("모든 preset 선택 항목과 URL이 필요합니다.");
+        console.warn("모든 선택 항목과 URL이 필요합니다.");
         return;
       }
+
 
       setUrl(payload.url);
       setCpus(payload.cpu);
@@ -93,32 +132,30 @@ export function RunProvider({ children }: { children: ReactNode }) {
       setMemories(payload.memory);
 
       setLoading(true);
-      try {
-        const res = await fetch("http://localhost:4000/api/run", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
+      setTotalCount(payload.cpu.length * payload.network.length * payload.gpu.length * payload.memory.length);
+      try{
+        const res = await fetch("http://localhost:4000/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), });
+        
         const data = await res.json();
-        setResults(data.results || []);
-      } catch (err) {
+        setResults(data.results || []);}
+        
+      catch(err){
         console.error("runPresets 실패", err);
-        throw err;
-      } finally {
+        throw err;}
+      finally{
         setLoading(false);
-      }
-    },
-    [cpus, gpus, memories, networks, url]
-  );
+        }
+      },
+      [cpus, gpus, memories, networks, url]);
 
+      
+  /**
+   * headful 실행
+   */
   const runHeadful = useCallback(
     async (preset: Preset, targetUrl?: string) => {
       const finalUrl = (targetUrl ?? url).trim();
-      if (!finalUrl) {
-        console.warn("Headful 실행에는 URL이 필요합니다.");
-        return;
-      }
+      if (!finalUrl) return;
 
       await fetch("http://localhost:4000/api/run/headful", {
         method: "POST",
@@ -129,7 +166,9 @@ export function RunProvider({ children }: { children: ReactNode }) {
     [url]
   );
 
-  const clearResults = useCallback(() => setResults([]), []);
+  const clearResults = useCallback(() => {
+    setResults([]);
+  }, []);
 
   const value: RunContextValue = {
     url,
@@ -142,8 +181,14 @@ export function RunProvider({ children }: { children: ReactNode }) {
     setGpus,
     memories,
     setMemories,
+
     results,
+
     loading,
+
+    currentIndex,
+    totalCount,
+
     runPresets,
     runHeadful,
     clearResults,
@@ -155,8 +200,7 @@ export function RunProvider({ children }: { children: ReactNode }) {
 export function useRun() {
   const ctx = useContext(RunContext);
   if (!ctx) {
-    throw new Error("useRun은 RunProvider 안에서만 사용할 수 있습니다.");
+    throw new Error("useRun은 RunProvider 내부에서만 사용해야 합니다.");
   }
   return ctx;
 }
-

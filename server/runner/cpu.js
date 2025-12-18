@@ -1,8 +1,9 @@
 async function applyCPUThrottling(client, cpu) {
   const rates = {
-    low: 6,      // 6x slower
-    medium: 3,
-    high: 1
+    veryverylow: 10,
+    verylow: 4,
+    low:2,
+    normal:1
   };
 
   const rate = rates[cpu] || 1;

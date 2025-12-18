@@ -1,5 +1,0 @@
-[
-  { "cpu": "low", "network": "slow-3g", "gpu": "off", "memory": "normal" },
-  { "cpu": "medium", "network": "4g", "gpu": "on", "memory": "low" },
-  { "cpu": "high", "network": "wifi", "gpu": "on", "memory": "very-low" }
-]
