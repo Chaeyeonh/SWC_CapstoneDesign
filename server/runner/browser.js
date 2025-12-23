@@ -34,9 +34,9 @@ async function createBrowser(gpu = "on", headless = false, memoryMode = "medium"
   if (gpu === "off") {
     args.push("--disable-gpu");
     args.push("--disable-accelerated-2d-canvas");
-    args.push("--disable-webgl");
+    //args.push("--disable-webgl");
     args.push("--disable-software-rasterizer");
-    args.push("--use-gl=disabled");
+    //args.push("--use-gl=disabled");
   }
   
   // 2. 메모리 제한 인수 추가 (새로운 로직)

@@ -9,7 +9,7 @@ import { ProgressBar } from "../components/common/ProgressBar";
 export default function PopupPage() {
   const navigate = useNavigate();
   const toggle = useToggle();
-  const { currentIndex, totalCount } = useRun();
+  //const { currentIndex, totalCount } = useRun();
 
   const {
     url,

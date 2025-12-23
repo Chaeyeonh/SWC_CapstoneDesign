@@ -8,6 +8,32 @@ function compactTitle(p: ScreeningResult["preset"]) {
   return `Preset (${p.cpu}, ${p.network}, ${p.gpu}, ${p.memory})`;
 }
 
+function isNil(v: unknown): v is null | undefined {
+  return v === null || v === undefined;
+}
+
+// 시간(ms/s) 계열은 0이면 측정 불가로 간주(너희 케이스)
+function isInvalidTimeMetric(v: unknown) {
+  return isNil(v) || Number.isNaN(Number(v)) || Number(v) <= 0;
+}
+
+// CLS는 0이 정상일 수 있으니 "null/undefined/NaN"만 무효로
+function isInvalidCls(v: unknown) {
+  return isNil(v) || Number.isNaN(Number(v));
+}
+
+function getInvalidMetricNames(metrics: any) {
+  if (!metrics) return ["ALL"];
+
+  const invalid: string[] = [];
+  if (isInvalidTimeMetric(metrics.lcp)) invalid.push("LCP");
+  if (isInvalidTimeMetric(metrics.fcp)) invalid.push("FCP");
+  if (isInvalidTimeMetric(metrics.ttfb)) invalid.push("TTFB");
+  if (isInvalidCls(metrics.cls)) invalid.push("CLS"); // CLS는 0 허용
+
+  return invalid;
+}
+
 export function PresetList({
   results,
   loading,
@@ -49,14 +75,27 @@ export function PresetList({
             const bottleneck = isBottleneck(r.metrics ?? null);
             const spikes = spikeMap.get(r) ?? [];
 
+            const invalidNames = getInvalidMetricNames(r.metrics);
+            const hasInvalid = invalidNames.length > 0 && invalidNames[0] !== "ALL";
+
             const badges: { text: string; tone: BadgeTone }[] = [];
-            if (timeout) badges.push({ text: "Timeout", tone: "bad" });
-            else if (!r.metrics) badges.push({ text: "No Metrics", tone: "neutral" });
-            else if (bottleneck) badges.push({ text: "Bottleneck", tone: "bad" });
-            else badges.push({ text: "Optimal", tone: "ok" });
+
+            if (timeout) {
+              badges.push({ text: "Timeout", tone: "bad" });
+            } else if (!r.metrics) {
+              badges.push({ text: "No Metrics", tone: "neutral" });
+            } else if (hasInvalid) {
+              // 원하는 문구로 바꿔도 됨: "Invalid", "No Data", "Incomplete"
+              badges.push({ text: `No Data: ${invalidNames.join(", ")}`, tone: "warn" });
+            } else if (bottleneck) {
+              badges.push({ text: "Bottleneck", tone: "bad" });
+            } else {
+              badges.push({ text: "Optimal", tone: "ok" });
+            }
 
             if (spikes.length) badges.push({ text: "Spike", tone: "warn" });
             if (broken.length) badges.push({ text: `${broken.length} issues`, tone: "bad" });
+              
 
             return (
               <PresetListItem
