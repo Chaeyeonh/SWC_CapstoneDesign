@@ -65,7 +65,7 @@
 
 ---
 
-## 🎬 Demo Video
+## 🎬 데모영상
 
 - ▶️ YouTube: https://youtu.be/j-3s3HZ4M5M
 
